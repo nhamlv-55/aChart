@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: orange;
+}
+
+.bar:hover {
+  fill: orangered ;
+}
+
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script>
+
+var margin = {top: 40, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var formatPercent = d3.format(".0%");
+
+// var x = d3.scale.ordinal()
+//     .rangeRoundBands([0, width], .1);
+
+var x = d3.time.scale()
+    // .domain(x)
+    .nice(d3.time.week)
+    .range([0, width]);
+
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    // .tickFormat(formatPercent);
+
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    date = new Date(d.date)
+    return "<strong>Date:</strong> <span style='color:red'>" + date.toDateString()+
+    "</span></br><strong>Number of Commit:</strong><span style='color:red'> "+d.commit+"</span>";
+  })
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.call(tip);
+
+d3.csv("user1commitSorted.csv", type, function(error, data) {
+  console.log(data)
+  var testObject={}
+  var today = new Date()
+  today = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  today.setDate(today.getDate()-90)
+  for (var i = 0; i <= 90; i++) {
+    testObject[today]=[]
+    today.setDate(today.getDate()+1)
+  };
+  for (var i = data.length - 1; i >= 0; i--) {
+    var date = new Date(data[i].created_datetime*1)
+    var dateString = new Date(date.getFullYear(),date.getMonth(),date.getDate())
+    if (dateString in testObject){
+      testObject[dateString].push(data[i])
+    }else{
+      testObject[dateString]=[data[i]]
+    }
+
+  };
+
+  console.log("testObject", testObject)
+
+  var arr = Object.keys(testObject).map(function(k) { return {'date':k, 'commit': testObject[k].length} });
+  console.log("wtf",arr)
+  // x.domain(arr.map(function(d) { return new Date(d.date); }));
+  x.domain([new Date(arr[0].date), new Date(arr[arr.length-1].date)])
+  y.domain([0, d3.max(arr, function(d) { return d.commit; })]);
+
+  console.log(x)
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Frequency");
+
+  svg.selectAll(".bar")
+      .data(arr)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(new Date(d.date)); })
+      .attr("width", width/arr.length)
+      .attr("y", function(d) { return y(d.commit); })
+      .attr("height", function(d) { return height - y(d.commit); })
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide)
+
+});
+
+function type(d) {
+  d.commit = +d.commit;
+  return d;
+}
+
+</script>
