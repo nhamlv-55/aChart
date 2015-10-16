@@ -88,7 +88,7 @@ var tip = d3.tip()
   .offset([-10, 0])
   .html(function(d) {
     // console.log(d)
-    var date = Date(d.created_datetime)
+    var date = new Date(d.created_datetime*1)
     var filename = d.filename
     var id = d.material_exercise_id
     return "<strong>Date:</strong> <span style='color:red'>" + date+
