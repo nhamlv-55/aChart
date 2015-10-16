@@ -87,12 +87,33 @@ var tip = d3.tip()
   .attr('class', 'd3-tip')
   .offset([-10, 0])
   .html(function(d) {
-    date = new Date(d.date)
-    return "<strong>Date:</strong> <span style='color:red'>" + date.toDateString()+
-    "</span></br><strong>Number of Commit:</strong><span style='color:red'> "+d.commit+"</span>";
+    // console.log(d)
+    var date = Date(d.created_datetime)
+    var filename = d.filename
+    var id = d.material_exercise_id
+    return "<strong>Date:</strong> <span style='color:red'>" + date+
+    "</span></br><strong>Filename:</strong><span style='color:red'> "+filename+"</span>"+
+    "</span></br><strong>Id:</strong><span style='color:red'> "+id+"</span>";
   })
 
+function getRandomColor() {
+    var letters = '0123456789ABCDEF'.split('');
+    var color = '#';
+    for (var i = 0; i < 6; i++ ) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
 
+var color_range = []
+for(i=0;i<100;i++){
+  var c = getRandomColor()
+  color_range.push(c)
+}
+var color = d3.scale.ordinal().range(color_range)
+var zoom = d3.behavior.zoom()
+    .x(x)
+    .on("zoom", zoomed)
 var svg = d3.select("body").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
@@ -124,12 +145,20 @@ d3.csv("user1commitSorted.csv", type, function(error, data) {
 
   console.log("testObject", testObject)
 
-  var arr = Object.keys(testObject).map(function(k) { return {'date':k, 'commit': testObject[k].length} });
+  var arr = Object.keys(testObject).map(function(k) { return {'date':k, 'commit': testObject[k]} });
+  arr.forEach(function(d){
+    var y0=0
+    d.commit.forEach(function(aCommit){
+      aCommit["y0"]=y0
+      y0+=1
+      aCommit["y1"]=y0
+    })
+  })
   console.log("wtf",arr)
   // x.domain(arr.map(function(d) { return new Date(d.date); }));
   x.domain([new Date(arr[0].date), new Date(arr[arr.length-1].date)])
-  y.domain([0, d3.max(arr, function(d) { return d.commit; })]);
-
+  y.domain([0, d3.max(arr, function(d) { return d.commit.length; })]);
+  color.domain([0, 100])
   console.log(x)
 
   svg.append("g")
@@ -147,18 +176,49 @@ d3.csv("user1commitSorted.csv", type, function(error, data) {
       .style("text-anchor", "end")
       .text("Frequency");
 
-  svg.selectAll(".bar")
+
+  var day = svg.selectAll(".day")
       .data(arr)
+    .enter().append("g")
+      .attr("class", "g")
+      .attr("transform", function(d){
+        return "translate(" + x(new Date(d.date)) + ",0)"
+    })
+
+  day.selectAll("rect")
+      .data(function(d){return d.commit})
     .enter().append("rect")
-      .attr("class", "bar")
-      .attr("x", function(d) { return x(new Date(d.date)); })
       .attr("width", width/arr.length)
-      .attr("y", function(d) { return y(d.commit); })
-      .attr("height", function(d) { return height - y(d.commit); })
+      .attr("y", function(d){
+        // console.log(d.y1)
+        return y(d.y1)
+      })
+      .attr("height", function(d){return y(d.y0)-y(d.y1)})
+      .style("fill", function(d){
+        // console.log(color(d.material_exercise_id))
+        return color(d.material_exercise_id)})
       .on('mouseover', tip.show)
       .on('mouseout', tip.hide)
 
+
+
+  // svg.selectAll(".bar")
+  //     .data(arr)
+  //   .enter().append("rect")
+  //     .attr("class", "bar")
+  //     .attr("x", function(d) { return x(new Date(d.date)); })
+  //     .attr("width", width/arr.length)
+  //     .attr("y", function(d) { return y(d.commit); })
+  //     .attr("height", function(d) { return height - y(d.commit); })
+  //     .on('mouseover', tip.show)
+  //     .on('mouseout', tip.hide)
+
 });
+
+function zoomed(){
+  console.log("call zoom")
+}
+
 
 function type(d) {
   d.commit = +d.commit;
