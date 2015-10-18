@@ -52,6 +52,7 @@ body {
 }
 </style>
 <body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 <script>
@@ -62,11 +63,8 @@ var margin = {top: 40, right: 20, bottom: 30, left: 40},
 
 var formatPercent = d3.format(".0%");
 
-// var x = d3.scale.ordinal()
-//     .rangeRoundBands([0, width], .1);
 
 var x = d3.time.scale()
-    // .domain(x)
     .nice(d3.time.week)
     .range([0, width]);
 
@@ -81,8 +79,9 @@ var xAxis = d3.svg.axis()
 var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left")
-    // .tickFormat(formatPercent);
 
+var clicked= false
+var clicked_id = -1
 var tip = d3.tip()
   .attr('class', 'd3-tip')
   .offset([-10, 0])
@@ -96,6 +95,21 @@ var tip = d3.tip()
     "</span></br><strong>Id:</strong><span style='color:red'> "+id+"</span>";
   })
 
+function highlight(material_exercise_id){
+  console.log(clicked)
+  if(!clicked||material_exercise_id!=clicked_id){
+    $("rect").css({"opacity": "0.2"})
+    $("."+ material_exercise_id).css({"opacity": "1"})
+    clicked=true
+    clicked_id=material_exercise_id  
+  }else{
+    $("rect").css({"opacity": "1"})
+    clicked=false
+    clicked_id=-1
+  }
+
+}
+
 function getRandomColor() {
     var letters = '0123456789ABCDEF'.split('');
     var color = '#';
@@ -104,6 +118,8 @@ function getRandomColor() {
     }
     return color;
 }
+
+
 
 var color_range = []
 for(i=0;i<100;i++){
@@ -193,13 +209,17 @@ d3.csv("user1commitSorted.csv", type, function(error, data) {
         // console.log(d.y1)
         return y(d.y1)
       })
+      .attr("class", function(d){
+        return d.material_exercise_id})
       .attr("height", function(d){return y(d.y0)-y(d.y1)})
       .style("fill", function(d){
         // console.log(color(d.material_exercise_id))
         return color(d.material_exercise_id)})
       .on('mouseover', tip.show)
       .on('mouseout', tip.hide)
-
+      .on('click', function(d){
+        highlight(d.material_exercise_id)
+      })
 
 
   // svg.selectAll(".bar")
@@ -226,3 +246,4 @@ function type(d) {
 }
 
 </script>
+
