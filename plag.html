@@ -52,8 +52,8 @@ body {
 <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 <script>
 
-var width = 900,
-    height = 600;
+var width = 1920,
+    height = 1000;
 
 var color = d3.scale.category20();
 
@@ -114,6 +114,9 @@ d3.json("example_2.json", function(error, data) {
   force
       .nodes(nodes)
       .links(links)
+      .linkDistance(function(d){
+        return 1/d["weight"]*150
+      })
       .start();
 
   var link = svg.selectAll(".link")
